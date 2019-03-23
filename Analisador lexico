@@ -1,0 +1,64 @@
+%x COMMENT
+%%
+byte							{printf("KW_BYTE\n");}
+int								{printf ("KW_INT\n");}
+float							{printf ("KW_FLOAT\n");}
+if								{printf ("KW_IF\n");}
+then							{printf ("KW_THEN\n");}
+else							{printf ("KW_ELSE\n");}
+loop							{printf ("KW_LOOP\n");}
+leap							{printf ("KW_LEAP\n");}
+read							{printf ("KW_READ\n");}
+print							{printf ("KW_PRINT\n");}
+return							{printf ("KW_RETURN\n");}
+or								{printf ("OPERATOR_OR\n");}
+and								{printf ("OPERATOR_AND\n");}
+not								{printf ("OPERATOR_NOT\n");}
+,								{printf ("%d\n",yytext[0]);}
+;								{printf ("%d\n",yytext[0]);}
+:								{printf ("%d\n",yytext[0]);}
+\(								{printf ("%d\n",yytext[0]);}
+\)								{printf ("%d\n",yytext[0]);}
+\[								{printf ("%d\n",yytext[0]);}
+\]								{printf ("%d\n",yytext[0]);}
+\{								{printf ("%d\n",yytext[0]);}
+\}								{printf ("%d\n",yytext[0]);}
+\+								{printf ("%d\n",yytext[0]);}
+\-								{printf ("%d\n",yytext[0]);}
+\*								{printf ("%d\n",yytext[0]);}
+\/								{printf ("%d\n",yytext[0]);}
+\<								{printf ("%d\n",yytext[0]);}
+\>								{printf ("%d\n",yytext[0]);}
+\=								{printf ("%d\n",yytext[0]);}
+\&								{printf ("%d\n",yytext[0]);}
+\$								{printf ("%d\n",yytext[0]);}
+\#								{printf ("%d\n",yytext[0]);}
+(ZZ).*(\r\n)					{}
+(XXX)							{BEGIN(COMMENT);}
+<COMMENT>.						{}
+<COMMENT>(XXX)					{BEGIN(INITIAL);}
+[OIHGFEDCBA]+.[OIHGFEDCBA]+		{printf("LIT_FLOAT\n");}
+[0-9]*[_a-z0-9]+ 				{printf("TK_IDENTIFIER\n");}
+[OIHGFEDCBA]+					{printf("LIT_INTEGER\n");}
+['].[']							{printf("LIT_CHAR\n");}
+["].+["]						{printf("LIT_STRING\n");}
+(<=)							{printf("OPERATOR_GE\n");}
+(>=)							{printf("OPERATOR_LE\n");}
+(==)							{printf("OPERATOR_EQ\n");}
+(!=)							{printf("OPERATOR_DIF\n");}
+(\r\n)							{}
+.								{printf ("TOKEN_ERROR\n");}
+%%
+#include <stdio.h>
+#include <stdlib.h>
+
+int yywrap(){
+    return 1;
+}
+
+
+void main(){
+	
+	yyin = fopen("TESTE.txt","r");
+	yylex();
+}
