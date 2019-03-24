@@ -1,3 +1,11 @@
+%{
+	#define HASH_SIZE 997
+	#include <string.h>
+	#include <stdlib.h>
+	#include <stdio.h>
+	#include "tokens.h"
+	
+%}
 %x COMMENT
 %%
 byte							{printf("KW_BYTE\n");}
@@ -37,11 +45,22 @@ not								{printf ("OPERATOR_NOT\n");}
 (XXX)							{BEGIN(COMMENT);}
 <COMMENT>.						{}
 <COMMENT>(XXX)					{BEGIN(INITIAL);}
-[OIHGFEDCBA]+.[OIHGFEDCBA]+		{printf("LIT_FLOAT\n");}
-[0-9]*[_a-z0-9]+ 				{printf("TK_IDENTIFIER\n");}
-[OIHGFEDCBA]+					{printf("LIT_INTEGER\n");}
-['].[']							{printf("LIT_CHAR\n");}
-["].+["]						{printf("LIT_STRING\n");}
+
+[OIHGFEDCBA]+.[OIHGFEDCBA]+		{printf("LIT_FLOAT\n");
+								insertHash(&yytext[0],LIT_FLOAT);}
+								
+[0-9]*[_a-z0-9]+ 				{printf("TK_IDENTIFIER\n");
+								insertHash(&yytext[0],TK_IDENTIFIER);}
+								
+[OIHGFEDCBA]+					{printf("LIT_INTEGER\n");
+								insertHash(&yytext[0],LIT_INTEGER);}
+								
+['].[']							{printf("LIT_CHAR\n");
+								insertHash(&yytext[0],LIT_CHAR);}
+								
+["].+["]						{printf("LIT_STRING\n");
+								insertHash(&yytext[0],LIT_STRING);}
+								
 (<=)							{printf("OPERATOR_GE\n");}
 (>=)							{printf("OPERATOR_LE\n");}
 (==)							{printf("OPERATOR_EQ\n");}
@@ -49,8 +68,129 @@ not								{printf ("OPERATOR_NOT\n");}
 (\r\n)							{}
 .								{printf ("TOKEN_ERROR\n");}
 %%
-#include <stdio.h>
-#include <stdlib.h>
+
+typedef struct struct_hash_node{
+	char *text;
+	int type;
+struct struct_hash_node *next;	
+}HASH_NODE;
+
+typedef struct struct_hash_table{
+	HASH_NODE *hashArray[HASH_SIZE];
+}HASH_TABLE;
+
+HASH_TABLE TABLE;
+
+HASH_TABLE *Table = &TABLE;
+	
+void initMe (void) {
+	int i;
+   //puts("init");
+   for (i = 0; i < HASH_SIZE; i++){
+        Table->hashArray[i] = NULL;
+   } 
+		//puts("init");
+}
+
+
+int getAddress (char *text){
+	int i;
+	int address = 1;
+	//puts(text);
+	for (i = 0; i < strlen(text); i++){
+		//puts("ADDRESSING2");
+		address = (address*text[i]) % HASH_SIZE;
+		//puts("ADDRESSING3");
+	}
+		//puts("address");
+	return address;
+}
+
+
+HASH_NODE *hashFind(char *text){
+	HASH_NODE *node;
+	int address;
+	//puts("FINDING");
+	address = getAddress(text);
+	//puts("FINDING");
+	node = Table->hashArray[address];
+	while(node != NULL){
+		if( node->type && (strcmp(node->text,text) == 0)){
+				//puts("found");
+			return node;
+		}
+		else{
+			node = node->next;
+		}
+	}
+	//puts("nfound");
+	return NULL;
+}
+
+
+int insertHash (char *text, int type){
+	int address;
+	HASH_NODE *node,*newNode;
+		//puts("inserting");
+	if(hashFind(text) != NULL){
+		return 0;
+	}
+	if(type == LIT_STRING || type == LIT_CHAR){
+		//puts("inserting");
+		char *t = text;
+		//puts("inserting");
+		//puts("inserting");
+		t[strlen(t)-1] = 0;
+		//puts("inserting");
+		memmove(text,text+1,strlen(text));
+		//puts("inserting");
+	}
+	
+	address = getAddress(text);
+	node = Table->hashArray[address];
+	newNode = malloc(sizeof(HASH_NODE));
+	newNode->text = malloc(strlen(text)+2);
+	strcpy(newNode->text,text);
+	newNode->next = node;
+	newNode->type = type;
+	Table->hashArray[address] = newNode;
+		//puts("inserted");
+	return 1;
+}
+
+
+void hashPrint(void){
+	int i;
+	HASH_NODE *node;
+		//puts("printing");
+	for(i = 0; i < HASH_SIZE; i++){
+		for(node = Table->hashArray[i]; node != NULL; node = node->next){
+			switch(node->type)
+			{
+				case TK_IDENTIFIER:
+					printf("Position:[%d] - Type: [IDENTIFIER] - Text: [%s] \n",i , node->text);
+					break;
+				case LIT_INTEGER: 	
+					printf("Position:[%d] - Type: [INT] - Text: [%s] \n",i , node->text);
+					break;
+				case LIT_CHAR:		
+					printf("Position:[%d] - Type: [CHAR] - Text: [%s] \n",i , node->text);
+					break;
+				case LIT_STRING:	
+					printf("Position:[%d] - Type: [STRING] - Text: [%s] \n",i , node->text);
+					break;
+				case LIT_FLOAT:
+					printf("Position:[%d] - Type: [FLOAT] - Text: [%s] \n",i , node->text);
+					break;
+				default:		
+					printf("?????");
+					break;
+			}
+		}
+	}
+		//puts("printed");
+}
+
 
 int yywrap(){
     return 1;
@@ -58,7 +198,11 @@ int yywrap(){
 
 
 void main(){
-	
+	//puts("main");
+	initMe();
+	//puts("main");
 	yyin = fopen("TESTE.txt","r");
 	yylex();
+	//puts("main");
+	hashPrint();
 }
